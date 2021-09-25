@@ -14,8 +14,8 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
-from django.urls import path
-
+from django.urls import path, include
+# urls는 client에게 요청받은 데이터를 분석해서 요청을 처리하기 위한 로직 view를 실행시킴
 urlpatterns = [
-
+     path('users', include('users.urls')),
 ]
