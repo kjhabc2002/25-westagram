@@ -11,6 +11,7 @@ from users.models          import User
 
 PASSWORD_MINIMUM_LENGTH = 8
 
+#회원가입 기능구현
 class SignUpView(View):
     def post(self, request):
         try:
@@ -26,6 +27,7 @@ class SignUpView(View):
             password=data.get('password',None)
             full_name=data.get('full_name',None)
             
+            #정규표현식 validation 구현
             email_pattern=re.compile('[a-zA-Z0-9._+-]+@[a-zA-Z0-9]+\.[a-zA-Z0-9.]')
             mobile_number_pattern=re.compile('^[0-9]{1,15}$')
             username_pattern=re.compile('^(?=.*[a-z])[a-z0-9_.]+$')
@@ -39,6 +41,7 @@ class SignUpView(View):
             ):
                 return JsonResponse({'message':'KEY_ERROR'}, status=400)
         
+            #if문으로 VaildationError가 발생하였음을 알려야한다.
             if email:
                 if not re.match(email_pattern, email):
                     return JsonResponse({'message':'EMAIL_VALIDATION_ERROR'}, status=400)
@@ -53,6 +56,10 @@ class SignUpView(View):
             if len(data['password']) < PASSWORD_MINIMUM_LENGTH:
                 return JsonResponse({'message':'PASSWORD_VALIDATION_ERROR'}, status=400)
             # q객체를 통해 or조건 사용
+            # 전달된 정보가 없다면 1반환
+            # 왜 None이 아니라 1로 했는가하면 email에는 null값이 존재할 수 있기 때문이다.
+            # 만약 email이None이라면 기존 db에 등록되어 있던 null이 같은 값이라고 취급되어 중복값이 
+            # 존재하는 것처럼 처리됨
             if User.objects.filter(
                 Q(email         = data.get('email', 1)) |
                 Q(mobile_number = data.get('mobile_number', 1)) |
@@ -73,4 +80,41 @@ class SignUpView(View):
         except JSONDecodeError:
             return JsonResponse({'message':'JSON_DECODE_ERROR'}, status=400)
 
-class 
+#로그인기능 구현
+class LoginView(View):
+    def post(request,response):
+        try:
+            data= json.loads(request.body)
+            
+            login_id=data.get('id',None)
+            password=data.get('password',None)
+           
+            if not(login_id and password):
+               return JsonResponse({'message':'KEY_ERROR'},status=401)
+           
+           #exists() : db에서 filter를 통해 조건의 데이터가 유무에 따라
+           # true,false를 반환하는 메소드
+           # 어떤 특정 조건 에 대해서 이벤트나 로직을 처리할 때 많이 쓰임
+            if User.objects.filter(
+                #get() 메소드 : queryset이 아닌 모델 객체를 반환하는 함수
+                Q(email=data.get('login_id')) |
+                
+                Q(mobile_number=data.get('login_id')) |
+                Q(username = data.get('login_id'))
+            #409 error code : 서버에 있는 파일보다 오래된 파일을 업로드하면 버전 제어 충돌발생
+            ).exists():
+                return JsonResponse({'message':'INVALID_USER'}, status=409)     
+            
+            #사용자 비밀번호를 가져와서 입력된 비밀번호와 비교
+            if User.password != password:
+                return JsonResponse({'message':'INVALID_PASSWORD'},status=401)
+            return JsonResponse({'message':'SUCESS',}, stauts=201)
+        except JSONDecodeError:
+            return JsonResponse({'message':'JSON_DECODE_ERROR'}, status=400)
+        
+            
+            
+                
+                 
+            
+            
