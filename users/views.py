@@ -72,4 +72,5 @@ class SignUpView(View):
         # JSONDecodeError : 아무런 정보도 전달되지 않았을때 발생하는 에러
         except JSONDecodeError:
             return JsonResponse({'message':'JSON_DECODE_ERROR'}, status=400)
-       
+
+class 
