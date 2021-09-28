@@ -5,7 +5,7 @@ from json.decoder import JSONDecodeError
 from django.shortcuts import render
 from django.views     import View
 
-from posting.models   import Posting, Image
+from posting.models   import Posting, Image, Comment
 from users.models    import User
 from django.http      import JsonResponse
 from users.utils      import login_decorator  
@@ -76,5 +76,55 @@ class PostingSearchView(View):
             } for posting in Posting.objects.filter(user_id=user_id)]
         return JsonResponse({'data':posting_list}, status=200)
 
+class CommentView(View):
+    @login_decorator
+    def post(self,request):
+        try:
+            data=json.loads(request.body)
+            user=request.user
+            
+            content    = data.get('content', None)
+            posting_id = data.get('posting_id', None)
+            
+            if not (content and posting_id):
+                return JsonResponse({'message':'KEY_ERROR'}, status=400)
+            
+            # 요청받은 posting_id에 매칭되는 게시물이 있는지 확인한다.
+            if not Posting.objects.filter(id=posting_id).exists():
+                return JsonResponse({'message':'POSTING_DOES_NOT_EXIST'}, status=404)
+            
+            posting = Posting.objects.get(id=posting_id)
+            
+            Comment.objects.create(
+                content = content,
+                user    = user,
+                posting = posting
+            )
 
-    
+            return JsonResponse({'message':'SUCCESS'}, status=200)
+        
+        except JSONDecodeError:
+            return JsonResponse({'message':'JSON_DECODE_ERROR'}, status=400)
+
+#댓글 표출 기능
+#특정 게시물에 대한 댓글만 표출
+class CommentSearchView(View):
+    #url로 posting_id를 전달받아 해당 게시물에 대한 댓글을 보여줌
+    def get(self, request, posting_id):
+        if not Posting.objects.filter(id=posting_id).exists():
+            return JsonResponse({'message':'POSTING_DOES_NOT_EXIST'}, status=404)
+
+        comment_list = [{
+            "username"  : User.objects.get(id=comment.user.id).username,
+            "content"   : comment.content,
+            "create_at" : comment.created_at
+            } for comment in Comment.objects.filter(posting_id=posting_id)
+        ]
+
+        return JsonResponse({'data':comment_list}, status=200)
+
+        
+        
+                
+            
+                
