@@ -22,18 +22,20 @@ class PostingView(View):
                 return JsonResponse({'image':'KEY_ERROR'}, status=400)
 
             # create()메서드를 이용한 데이터 생성하기
-            posting= Posting.object.create(
+            posting= Posting.objects.create(
                 user = user,
                 content = content
             )
             #image_url_list는 이미지가 담긴 리스트로 for문을 사용하여 리스트 값을 하나씩
             # 가져와야 됨
             # foreign key인 posting도 생성해야함
-            for image_url in:
+            for image_url in image_url_list:
                 Image.objects.create(
                     image_url = image_url,
                     posting = posting
                 )
+                return JsonResponse({'message':'SUCCESS'}, status=200)
+            
         except JSONDecodeError:
             return JsonResponse({'message':'JSON_DECODE_ERROR'}, status=400)
         
@@ -51,7 +53,20 @@ class PostingView(View):
             
             return JsonResponse({'data':posting_list}, status=200)
 
+#특정 유저의 게시물 표출 기능
+#user_id로 조회해서 특정유저의 게시물만 표출하는 로직구현
+class PostingSearchView(View):
+    def get(self, request, user_id):
+        #user_id에 해당하는 유저가 없을 경우 에러코드 응답
+        if not User.objects.filter(id=user_id).exists():
+            return JsonResponse({'message':'USER_DOES_NOT_EXIST'}, status=404)
+        #filter로 해당유저의 정보만 가져옴
+        posting_list = [{
+            "username" : User.objects.get(id=user_id).username,
+            "content" : posting.content,
+            "image_url" : [i.image_url for i in Image.objects.filter(posting_id = posting.id)],
+            } for posting in Posting.objects.filter(user_id=user_id)]
+        return JsonResponse({'data':posting_list}, status=200)
 
-        
         
     
