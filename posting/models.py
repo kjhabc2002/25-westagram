@@ -1,5 +1,5 @@
 from django.db import models
-from users.models import User
+from users.models  import User
 
 # posting - 인스타그램의 게시물 생성하는 app
 # 게시물에는 작성자,이미지,내용, 생성시간이 필요하다
@@ -32,7 +32,7 @@ class Comment(models.Model):
     content    = models.CharField(max_length=500)
     created_at = models.DateTimeField(auto_now_add=True)
     #한명의 유저는 여러개의 댓글을 달 수 있음 ( User와 Comment테이블은 1대다관계)
-    user       = models.ForeignKey('user.User', on_delete=models.CASCADE)
+    user       = models.ForeignKey('users.User', on_delete=models.CASCADE)
     #하나의 게시물에 댓글이 여러개 달릴수있음 (posting과 comment테이블은 1대다관계)
     posting    = models.ForeignKey('Posting', on_delete=models.CASCADE)
     
