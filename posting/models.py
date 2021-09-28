@@ -16,7 +16,7 @@ class Posting(models.Model):
     #users.User -> 외부의 클래스를 가져오려면 경로를 명확히 해주어야한다. 
     #               User라고 하면 에러발생함
     user= models.ForeignKey('users.User', on_delete=models.CASCADE)
-
+    
     class Meta:
         db_table='postings'
         
@@ -26,3 +26,17 @@ class Image(models.Model):
     
     class Meta:
         db_table='images'
+
+
+class Comment(models.Model):
+    content    = models.CharField(max_length=500)
+    created_at = models.DateTimeField(auto_now_add=True)
+    #한명의 유저는 여러개의 댓글을 달 수 있음 ( User와 Comment테이블은 1대다관계)
+    user       = models.ForeignKey('user.User', on_delete=models.CASCADE)
+    #하나의 게시물에 댓글이 여러개 달릴수있음 (posting과 comment테이블은 1대다관계)
+    posting    = models.ForeignKey('Posting', on_delete=models.CASCADE)
+    
+    class Meta:
+        db_table = 'comments'
+        
+    
