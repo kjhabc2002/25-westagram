@@ -1,12 +1,15 @@
 import json
 import re
+import bcrypt
+import jwt
 from json.decoder import JSONDecodeError
 
 from django.shortcuts import render
 from django.http      import JsonResponse
 from django.views     import View
 from django.db.models import Q
-from users.models          import User
+from users.models     import User
+from my_settings      import SECRET, ALGORITHM
 
 
 PASSWORD_MINIMUM_LENGTH = 8
@@ -16,14 +19,14 @@ class SignUpView(View):
     def post(self, request):
         try:
             #회원가입에 필요한 정보는 json형식으로 request의 body에 담겨서 옵니다.
-            data= json.load(request.body)
+            data= json.loads(request.body)
             
             # 딕셔너리 get메소드
             # 딕셔너리.get(키, 기본값) : 해당 키값이 없는 경우 기본값을 대신 가져옴
             
             email=data.get('email', None)
             mobile_number=data.get('mobile_number',None)
-            username=data.get('useraname',None)
+            username=data.get('username',None)
             password=data.get('password',None)
             full_name=data.get('full_name',None)
             
@@ -72,7 +75,7 @@ class SignUpView(View):
                 mobile_number = mobile_number,
                 full_name     = full_name,
                 username      = username,
-                password      = password
+                password      = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
             )
             return JsonResponse({'message':'SUCCESS'}, status=201)
         
@@ -82,33 +85,50 @@ class SignUpView(View):
 
 #로그인기능 구현
 class LoginView(View):
-    def post(request,response):
+    def post(self, request):
         try:
             data= json.loads(request.body)
             
             login_id=data.get('id',None)
             password=data.get('password',None)
-           
+            #password=bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+            
             if not(login_id and password):
                return JsonResponse({'message':'KEY_ERROR'},status=401)
            
            #exists() : db에서 filter를 통해 조건의 데이터가 유무에 따라
            # true,false를 반환하는 메소드
            # 어떤 특정 조건 에 대해서 이벤트나 로직을 처리할 때 많이 쓰임
-            if User.objects.filter(
+            if not User.objects.filter(
                 #get() 메소드 : queryset이 아닌 모델 객체를 반환하는 함수
                 Q(email=data.get('login_id')) |
-                
                 Q(mobile_number=data.get('login_id')) |
                 Q(username = data.get('login_id'))
             #409 error code : 서버에 있는 파일보다 오래된 파일을 업로드하면 버전 제어 충돌발생
             ).exists():
                 return JsonResponse({'message':'INVALID_USER'}, status=409)     
             
+            user = User.objects.get(
+                Q(email=login_id) |
+                Q(mobile_number=login_id) |
+                Q(username=login_id)
+            )
             #사용자 비밀번호를 가져와서 입력된 비밀번호와 비교
-            if User.password != password:
-                return JsonResponse({'message':'INVALID_PASSWORD'},status=401)
-            return JsonResponse({'message':'SUCESS',}, stauts=201)
+            # if user.password != password:
+            #     return JsonResponse({'message':'INVALID_PASSWORD'},status=401)
+            # return JsonResponse({'message':'SUCESS',}, stauts=201)
+            
+            # checkpw() 메소드로 입력된 비밀번호가 맞는지 확인
+            # 사용자가 입력한 패스워드와 db에 str타입으로 저장되어있는 패스워드를 각각 인자로 받는데
+            # 둘다 str타입으로 encode해줘야 함
+            if not bcrypt.checkpw(password.encode('utf-8'), user.password.encode('utf-8')):
+                return JsonResponse({'message':'INVALID_PASSWORD'}, status=401)
+            
+            #비밀번호가 일치하면 access_token을 발급하고 jsonresponse에 담아서 보낸다
+            access_token =jwt.encode({"id":user.id}, SECRET, algorithm=ALGORITHM)
+            
+            return JsonResponse({'message':'SUCCESS', 'Authorization':access_token}, status=200)
+
         except JSONDecodeError:
             return JsonResponse({'message':'JSON_DECODE_ERROR'}, status=400)
         
