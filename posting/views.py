@@ -8,17 +8,25 @@ from django.views     import View
 from posting.models   import Posting, Image
 from users.models    import User
 from django.http      import JsonResponse
+from users.utils      import login_decorator  
 
 class PostingView(View):
+    #post함수를 실행하기 전에 로그인 토큰을 확인하도록 데코레이터 추가
+    @login_decorator
     def post(self, request):
         try:
             data=json.loads(request.body)
-            user = User.objects.get(username=data.get('user',None))
+            #user = User.objects.get(username=data.get('user',None))
+            user=request.user
+            
             content = data.get('content', None)
             image_url_list = data.get('image_url', None)
             # key error 처리하기
             # content는 없어도 되는 정보이므로 user와 image_url_list에만 값이 잘 담겨져있는지 확인
-            if not (user and image_url_list):
+            
+            # if문에 user가 빠진이유는 
+            # user에는 데코레이터를 통과했다면 반드시 값이 담기므로 keyerror를 처리할 필요가 없다.
+            if not image_url_list:
                 return JsonResponse({'image':'KEY_ERROR'}, status=400)
 
             # create()메서드를 이용한 데이터 생성하기
@@ -68,5 +76,5 @@ class PostingSearchView(View):
             } for posting in Posting.objects.filter(user_id=user_id)]
         return JsonResponse({'data':posting_list}, status=200)
 
-        
+
     
