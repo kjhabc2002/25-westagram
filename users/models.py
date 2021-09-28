@@ -2,7 +2,8 @@ from django.db import models
 
 # Create your models here.
 class User(models.Model):
-    #unique=True : 고유한 값이어야함 즉, email,mobile_number,username은 로그인할때 id로 사용할 수 있기에 중복한 값이 없어야한다
+    #unique=True : 고유한 값이어야함 즉, email,mobile_number,username은 
+    # 로그인할때 id로 사용할 수 있기에 중복한 값이 없어야한다
     email=models.CharField(max_length=100, unique=True, null=True)
     full_name=models.CharField(max_length=100)
     username=models.CharField(max_length=100, unique=True)
